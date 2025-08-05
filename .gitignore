@@ -6,12 +6,21 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignore datasets and model files
+data/dataset yoloV8/
+data/dataset yoloV8 2/
+
+
+#Ignore image files
+data/extracted_frames/
+
+# Ignore YOLOv8 prediction results
+src/detection/runs
+
+
+
 # Ignore video files
-videos/*.mp4
-videos/*.mp4
-videos/*.avi
-videos/*.mov
-videos/*.mkv
+data/raw_videos/
 
 # Ignore output files
 outputs/
