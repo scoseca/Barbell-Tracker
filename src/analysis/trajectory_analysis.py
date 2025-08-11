@@ -232,113 +232,68 @@ class TrajectoryAnalyzer:
         else:
             plt.show()
     
-    def create_animation(self, trajectory, analysis_results, title="Barbell Motion", save_path=None, fps=10):
+    def create_animation(self, trajectory, analysis_results, title="Barbell Trajectory", save_path=None, fps=10):
         """
-        Create an animated visualization of barbell motion with metrics.
+        Crea un'animazione della traiettoria del bilanciere.
         
         Args:
-            trajectory: Original list of (x, y) position tuples
-            analysis_results: Dictionary from analyze_trajectory method
-            title: Title for the animation
-            save_path: Path to save the animation (if None, animation is displayed)
-            fps: Frames per second for the animation
+            trajectory: Array NumPy o lista di tuple (x, y) che rappresenta la traiettoria
+            analysis_results: Dizionario con i risultati dell'analisi
+            title: Titolo dell'animazione
+            save_path: Percorso dove salvare l'animazione (GIF)
+            fps: Frame per secondo dell'animazione
         """
-        fig = plt.figure(figsize=(15, 10))
         
-        # Create grid layout
-        gs = fig.add_gridspec(2, 2)
-        ax1 = fig.add_subplot(gs[0, 0])  # Trajectory
-        ax2 = fig.add_subplot(gs[0, 1])  # Y position over time
-        ax3 = fig.add_subplot(gs[1, 0])  # Velocity over time
-        ax4 = fig.add_subplot(gs[1, 1])  # Acceleration over time
-        
-        # Set up trajectory plot
+        # Converti sempre in array NumPy
         trajectory_array = np.array(trajectory)
-        ax1.plot(trajectory_array[:, 0], trajectory_array[:, 1], 'b-', alpha=0.5)
-        point, = ax1.plot([], [], 'ro', markersize=10)
-        ax1.set_title('Barbell Path')
-        ax1.set_xlabel('X Position (pixels)')
-        ax1.set_ylabel('Y Position (pixels)')
-        ax1.invert_yaxis()  # Invert y-axis to match image coordinates
-        ax1.grid(True)
         
-        # Set up position plot
-        pos_line, = ax2.plot([], [], 'b-')
-        pos_point, = ax2.plot([], [], 'bo', markersize=8)
-        ax2.set_title('Vertical Position')
-        ax2.set_xlabel('Time (seconds)')
-        ax2.set_ylabel('Y Position (pixels)')
-        ax2.grid(True)
-        ax2.invert_yaxis()  # Invert y-axis to match image coordinates
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.set_title(title)
         
-        # Set up velocity plot
-        vel_line, = ax3.plot([], [], 'g-')
-        vel_point, = ax3.plot([], [], 'go', markersize=8)
-        ax3.set_title('Speed')
-        ax3.set_xlabel('Time (seconds)')
-        ax3.set_ylabel('Speed (pixels/sec)')
-        ax3.grid(True)
+        # Disegna il percorso completo
+        ax.plot(trajectory_array[:, 0], trajectory_array[:, 1], 'b-', alpha=0.3)
         
-        # Set up acceleration plot
-        acc_line, = ax4.plot([], [], 'r-')
-        acc_point, = ax4.plot([], [], 'ro', markersize=8)
-        ax4.set_title('Acceleration')
-        ax4.set_xlabel('Time (seconds)')
-        ax4.set_ylabel('Acceleration (pixels/sec²)')
-        ax4.axhline(y=0, color='k', linestyle='--', alpha=0.3)
-        ax4.grid(True)
+        # Inizializza il punto che si muoverà lungo la traiettoria
+        point, = ax.plot([], [], 'ro', markersize=10)
         
-        # Set axis limits
-        ax2.set_xlim(0, analysis_results["time"][-1])
-        ax2.set_ylim(np.min(analysis_results["positions"][:, 1]) * 1.1, 
-                    np.max(analysis_results["positions"][:, 1]) * 0.9)  # Inverted y-axis
+        # Testo per velocità e accelerazione
+        velocity_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
         
-        ax3.set_xlim(0, analysis_results["velocity_time"][-1])
-        ax3.set_ylim(0, np.max(analysis_results["velocity_mag"]) * 1.1)
+        # Imposta i limiti del grafico
+        margin = 50  # margine in pixel
+        ax.set_xlim(trajectory_array[:, 0].min() - margin, trajectory_array[:, 0].max() + margin)
+        ax.set_ylim(trajectory_array[:, 1].min() - margin, trajectory_array[:, 1].max() + margin)
         
-        ax4.set_xlim(0, analysis_results["acceleration_time"][-1])
-        max_acc = np.max(np.abs(analysis_results["acceleration_mag"]))
-        ax4.set_ylim(-max_acc * 1.1, max_acc * 1.1)
+        # Inverti l'asse y per corrispondere alle coordinate immagine
+        ax.invert_yaxis()
         
-        # Add title to the figure
-        fig.suptitle(title, fontsize=16)
-        plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make room for the figure title
-        
+        # Funzione di aggiornamento chiamata per ogni frame
         def update(frame):
-            # Update trajectory point
-            if frame < len(trajectory_array):
-                point.set_data(trajectory_array[frame, 0], trajectory_array[frame, 1])
+            # Assicurati che frame sia un indice valido
+            frame = min(frame, len(trajectory_array) - 1)
             
-            # Update position plot
-            pos_line.set_data(analysis_results["time"][:frame+1], 
-                             analysis_results["positions"][:frame+1, 1])
-            if frame < len(analysis_results["positions"]):
-                pos_point.set_data(analysis_results["time"][frame], 
-                                  analysis_results["positions"][frame, 1])
+            # CORREZIONE QUI: Passa liste, non singoli valori
+            point.set_data([trajectory_array[frame, 0]], [trajectory_array[frame, 1]])
             
-            # Update velocity plot
-            if frame < len(analysis_results["velocity_time"]):
-                vel_line.set_data(analysis_results["velocity_time"][:frame+1], 
-                                analysis_results["velocity_mag"][:frame+1])
-                vel_point.set_data(analysis_results["velocity_time"][frame], 
-                                  analysis_results["velocity_mag"][frame])
+            # Aggiorna testo con dati di velocità se disponibili
+            if 'velocities' in analysis_results and len(analysis_results['velocities']) > frame:
+                vel = analysis_results['velocities'][frame]
+                velocity_text.set_text(f'Velocità: {vel:.2f} px/s')
             
-            # Update acceleration plot
-            if frame < len(analysis_results["acceleration_time"]):
-                acc_line.set_data(analysis_results["acceleration_time"][:frame+1], 
-                                analysis_results["acceleration_mag"][:frame+1])
-                acc_point.set_data(analysis_results["acceleration_time"][frame], 
-                                 analysis_results["acceleration_mag"][frame])
-            
-            return point, pos_line, pos_point, vel_line, vel_point, acc_line, acc_point
+            return point, velocity_text
         
-        # Create animation
-        frames = min(len(trajectory_array), len(analysis_results["time"]))
-        ani = FuncAnimation(fig, update, frames=frames, interval=1000/fps, blit=True)
+        # Crea l'animazione
+        frames = len(trajectory_array)
+        ani = FuncAnimation(fig, update, frames=range(frames), interval=1000/fps, blit=True)
         
+        # Salva o mostra l'animazione
         if save_path:
+            # Assicurati che la directory esista
+            import os
+            os.makedirs(os.path.dirname(os.path.abspath(save_path)) if os.path.dirname(save_path) else '.', exist_ok=True)
+            
             ani.save(save_path, writer='pillow', fps=fps)
-            plt.close()
+            print(f"Animazione salvata in: {save_path}")
         else:
             plt.show()
             

@@ -1,9 +1,38 @@
 import argparse
+import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from ultralytics import YOLO
-# Correzione del percorso di importazione (scr → src)
 import src.detection.barbell_tracker as barbell_tracker_module
+from src.analysis.trajectory_analysis import TrajectoryAnalyzer
+
+def print_analysis_results(results_dict):
+    """
+    Formatta e stampa i risultati dell'analisi della traiettoria.
+    """
+    print("\n----- ANALISI DELLA TRAIETTORIA -----")
+    for key, value in results_dict.items():
+        print(f"{key}:")
+        
+        if isinstance(value, (int, float)):
+            print(f"  {value:.2f}")
+        elif isinstance(value, np.ndarray) and key == "positions":
+            print("  [")
+            for i, pos in enumerate(value):
+                #if i % 10 == 0:  # Stampa ogni 10 posizioni (puoi regolarlo)
+                print(f"    Punto {i}: ({pos[0]:.2f}, {pos[1]:.2f})")
+            #print(f"    ... e altri {len(value)-4} punti")
+            print("  ]")
+        elif isinstance(value, np.ndarray):
+            if value.ndim == 1:
+                print(f"  Array 1D di lunghezza {len(value)}")
+            else:
+                print(f"  Array {value.ndim}D di forma {value.shape}")
+        elif isinstance(value, list):
+            print(f"  Lista di lunghezza {len(value)}")
+        else:
+            print(f"  {value}")
+    print("-------------------------------------\n")
 
 
 if __name__ == "__main__":
@@ -28,7 +57,7 @@ if __name__ == "__main__":
     
     pose_landmarker = vision.PoseLandmarker.create_from_options(options)
     
-    # Inizializza il tracker del bilanciere (evitare doppia inizializzazione del modello YOLO)
+    # Inizializza il tracker del bilanciere
     tracker = barbell_tracker_module.BarbellTracker(
         model_path=args.yolo_model_path,
         confidence=args.confidence, 
@@ -43,9 +72,43 @@ if __name__ == "__main__":
         print(f"Found {len(trajectories)} tracked objects")
         track_id, trajectory = tracker.get_longest_trajectory()
         if track_id is not None:
-            print(f"Longest trajectory has ID {track_id} with {len(trajectory)} points")
-            print(f"First 3 points: {trajectory[:3]}")
-            print(f"Last 3 points: {trajectory[-3:]}")
+            # print(f"Longest trajectory has ID {track_id} with {len(trajectory)} points")
+            # print(f"First 3 points: {trajectory[:3]}")
+            # print(f"Last 3 points: {trajectory[-3:]}")
+            
+            # Inizializza l'analizzatore con l'fps corretto
+            # Ottieni l'fps dal tracker o dal video
+            fps = 30  # Sostituisci con l'fps reale del tuo video
+            analyzer = TrajectoryAnalyzer(fps=fps)
+            
+            # Da [(x, y, timestamp), ...] a [(x, y), ...]
+            # La TrajectoryAnalyzer probabilmente si aspetta solo coordinate x,y senza timestamp
+            trajectory_xy = [(point[0], point[1]) for point in trajectory]
+            
+            # Ora passa solo le coordinate x,y all'analyzer
+            smooth_trajectory = analyzer.smooth_trajectory(trajectory_xy)
+            
+            # Continua con l'analisi
+            if trajectory_xy is not None:
+                # Esempio di analisi (sostituisci con le tue chiamate)
+                analysis_results = analyzer.analyze_trajectory(trajectory_xy)
+                print_analysis_results(analysis_results)
     else:
         print("No trajectories were detected")
-    
+
+    analyzer.plot_trajectory_2d(smooth_trajectory, "E:\Tesi\Barbel-Tracker\data\output")
+    analyzer.plot_metrics(analysis_results)
+
+    try:
+        print("Creazione dell'animazione...")
+        trajectory_array = np.array(smooth_trajectory)
+        analyzer.create_animation(
+            trajectory_array,
+            analysis_results,
+            title="Analisi della Traiettoria del Bilanciere",
+            save_path="barbell_trajectory_animation.gif",
+            fps=10
+        )
+        print("Animazione creata con successo!")
+    except Exception as e:
+        print(f"Errore durante la creazione dell'animazione: {str(e)}")
