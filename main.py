@@ -5,6 +5,7 @@ from mediapipe.tasks.python import vision
 from ultralytics import YOLO
 import src.detection.barbell_tracker as barbell_tracker_module
 from src.analysis.trajectory_analysis import TrajectoryAnalyzer
+from src.visualization.Visualizer import Visualizer
 
 def print_analysis_results(results_dict):
     """
@@ -96,13 +97,14 @@ if __name__ == "__main__":
     else:
         print("No trajectories were detected")
 
-    analyzer.plot_trajectory_2d(smooth_trajectory, "E:\Tesi\Barbel-Tracker\data\output")
-    analyzer.plot_metrics(analysis_results)
+    visualizer = Visualizer()
+    visualizer.plot_trajectory_2d(smooth_trajectory, save_path="E:\Tesi\Barbel-Tracker\data\output")
+    visualizer.plot_metrics(analysis_results, save_path="E:\Tesi\Barbel-Tracker\data\output")
 
     try:
         print("Creazione dell'animazione...")
         trajectory_array = np.array(smooth_trajectory)
-        analyzer.create_animation(
+        visualizer.create_animation(
             trajectory_array,
             analysis_results,
             title="Analisi della Traiettoria del Bilanciere",
@@ -112,3 +114,9 @@ if __name__ == "__main__":
         print("Animazione creata con successo!")
     except Exception as e:
         print(f"Errore durante la creazione dell'animazione: {str(e)}")
+
+    visualizer.plot_trajectory_on_video(smooth_trajectory, 
+                                    video_path=args.input,
+                                    output_path="E:\Tesi\Barbel-Tracker\data\output\trajectory_video.mp4",
+                                    show_velocity=True,
+                                    analysis_results=analysis_results)
