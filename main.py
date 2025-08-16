@@ -5,7 +5,7 @@ from mediapipe.tasks.python import vision
 from ultralytics import YOLO
 import src.detection.barbell_tracker as barbell_tracker_module
 from src.analysis.trajectory_analysis import TrajectoryAnalyzer
-from src.visualization.Visualizer import Visualizer
+from src.visualization.visualizer import Visualizer
 
 def print_analysis_results(results_dict):
     """
@@ -88,35 +88,31 @@ if __name__ == "__main__":
             
             # Ora passa solo le coordinate x,y all'analyzer
             smooth_trajectory = analyzer.smooth_trajectory(trajectory_xy)
-            
-            # Continua con l'analisi
             if trajectory_xy is not None:
-                # Esempio di analisi (sostituisci con le tue chiamate)
                 analysis_results = analyzer.analyze_trajectory(trajectory_xy)
                 print_analysis_results(analysis_results)
     else:
         print("No trajectories were detected")
 
     visualizer = Visualizer()
-    visualizer.plot_trajectory_2d(smooth_trajectory, save_path="E:\Tesi\Barbel-Tracker\data\output")
-    visualizer.plot_metrics(analysis_results, save_path="E:\Tesi\Barbel-Tracker\data\output")
-
-    try:
-        print("Creazione dell'animazione...")
-        trajectory_array = np.array(smooth_trajectory)
-        visualizer.create_animation(
-            trajectory_array,
-            analysis_results,
-            title="Analisi della Traiettoria del Bilanciere",
-            save_path="barbell_trajectory_animation.gif",
-            fps=10
-        )
-        print("Animazione creata con successo!")
-    except Exception as e:
-        print(f"Errore durante la creazione dell'animazione: {str(e)}")
+    # visualizer.plot_trajectory_2d(smooth_trajectory, save_path="E:/Tesi/Barbel-Tracker/data/output")
+    # visualizer.plot_metrics(analysis_results)
+    # try:
+    #     print("Creazione dell'animazione...")
+    #     trajectory_array = np.array(smooth_trajectory)
+    #     visualizer.create_animation(
+    #         trajectory_array,
+    #         analysis_results,
+    #         title="Analisi della Traiettoria del Bilanciere",
+    #         save_path="barbell_trajectory_animation.gif",
+    #         fps=10
+    #     )
+    #     print("Animazione creata con successo!")
+    # except Exception as e:
+    #     print(f"Errore durante la creazione dell'animazione: {str(e)}")
 
     visualizer.plot_trajectory_on_video(smooth_trajectory, 
                                     video_path=args.input,
-                                    output_path="E:\Tesi\Barbel-Tracker\data\output\trajectory_video.mp4",
+                                    output_path="E:/Tesi/Barbel-Tracker/data/output/trajectory_video.mp4",
                                     show_velocity=True,
                                     analysis_results=analysis_results)

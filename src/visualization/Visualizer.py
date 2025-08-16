@@ -4,13 +4,17 @@ import cv2
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
-import tqdm
+from tqdm import tqdm
 
 class Visualizer:
-    def plot_trajectory_on_video(trajectory, video_path, output_path=None, 
+
+    def __init__(self):
+        pass
+
+    def plot_trajectory_on_video(self, trajectory, video_path, output_path=None, 
                              point_color=(0, 0, 255), point_size=5, 
-                             draw_path=True, path_color=(255, 0, 0),
-                             path_thickness=2, path_history=None,
+                             draw_path=True, path_color=(0, 255, 0),
+                             path_thickness=5, path_history=None,
                              show_velocity=False, analysis_results=None):
         """
         Disegna la traiettoria del bilanciere su ogni frame del video.
@@ -56,7 +60,7 @@ class Visualizer:
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
         
         # Converti la traiettoria in array NumPy
-        # trajectory_array = np.array(trajectory, dtype=np.int32)
+        trajectory_array = np.array(trajectory, dtype=np.int32)
         
         # Ottieni velocità se disponibile
         velocities = None
@@ -64,17 +68,17 @@ class Visualizer:
             velocities = analysis_results['velocities']
         
         # Processa il video frame per frame
-        pbar = tqdm(total=min(frame_count, len(trajectory)), desc="Elaborazione video")
+        pbar = tqdm(total=min(frame_count, len(trajectory_array)), desc="Elaborazione video")
         frame_idx = 0
         
         while True:
             ret, frame = cap.read()
-            if not ret or frame_idx >= len(trajectory):
+            if not ret or frame_idx >= len(trajectory_array):
                 break
                 
             # Ottieni la posizione corrente
-            x, y = trajectory[frame_idx]
-            
+            x, y = trajectory_array[frame_idx]
+
             # Disegna il percorso
             if draw_path:
                 # Determina quanti punti mostrare
@@ -82,15 +86,15 @@ class Visualizer:
                 
                 # Disegna solo la parte di percorso necessaria
                 for i in range(start_idx + 1, frame_idx + 1):
-                    p1 = tuple(trajectory[i-1])
-                    p2 = tuple(trajectory[i])
+                    p1 = tuple(trajectory_array[i-1])
+                    p2 = tuple(trajectory_array[i])
                     cv2.line(frame, p1, p2, path_color, path_thickness)
             
             # Disegna il punto della posizione attuale
             cv2.circle(frame, (x, y), point_size, point_color, -1)
             
             # Informazioni sul frame
-            text = f"Frame: {frame_idx+1}/{len(trajectory)}"
+            text = f"Frame: {frame_idx+1}/{len(trajectory_array)}"
             cv2.putText(frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
                         0.7, (255, 255, 255), 2)
             
@@ -115,7 +119,7 @@ class Visualizer:
         print(f"Video con traiettoria salvato in: {output_path}")
         return output_path
 
-    def plot_trajectory_2d(trajectory, title="Barbell Trajectory", save_path=None):
+    def plot_trajectory_2d(self, trajectory, title="Barbell Trajectory", save_path=None):
             """
             Create 2D plot of the barbell path.
             
@@ -148,7 +152,7 @@ class Visualizer:
                 plt.show()
 
 
-    def plot_metrics(analysis_results, title_prefix="Barbell", save_dir=None):
+    def plot_metrics(self, analysis_results, title_prefix="Barbell", save_dir=None):
             """
             Create plots for position, velocity and acceleration.
             
@@ -196,7 +200,7 @@ class Visualizer:
                 plt.show()
 
 
-    def create_animation(trajectory, analysis_results, title="Barbell Trajectory", save_path=None, fps=10):
+    def create_animation(self, trajectory, analysis_results, title="Barbell Trajectory", save_path=None, fps=10):
             """
             Crea un'animazione della traiettoria del bilanciere.
             
