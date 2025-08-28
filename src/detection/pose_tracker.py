@@ -77,7 +77,7 @@ class PoseTracker:
                     landmark = pose_landmarks[idx]
                     x = landmark.x * frame_width
                     y = landmark.y * frame_height
-                    z = landmark.z  # La profondità z è già normalizzata
+                    z = landmark.z
                     landmarks_px[landmark_name] = (x, y, z)
                     
                     # Traccia le articolazioni nel tempo

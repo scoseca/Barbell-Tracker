@@ -265,3 +265,93 @@ class Visualizer:
             else:
                 plt.show()
 
+    def visualize_squat_analysis(self, video_path, barbell_trajectory, foot_position, 
+                            squat_analysis, output_path):
+        """
+        Crea un video che mostra l'analisi dello squat con la relazione tra
+        bilanciere e midfoot.
+        """
+        
+        # Apri il video
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            print(f"Errore nell'apertura del video: {video_path}")
+            return
+        
+        # Proprietà del video
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Configura il writer per il video di output
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        # Prepara i dati
+        barbell_array = np.array(barbell_trajectory)
+        
+        # Definisci la zona sicura
+        # safe_zone_width = 2 * squat_analysis["std_deviation_px"]
+        # safe_zone_width = max(safe_zone_width, 50)  # Minimo 50 pixel
+        safe_zone_width = 50
+        midfoot_x = foot_position[0]
+        
+        # Colori
+        GREEN = (0, 255, 0)  # Zona sicura
+        RED = (0, 0, 255)    # Fuori zona
+        BLUE = (255, 0, 0)   # Linea midfoot
+        WHITE = (255, 255, 255)  # Testo
+        
+        # Processa il video frame per frame
+        frame_idx = 0
+        pbar = tqdm(total=min(frame_count, len(barbell_array)), desc="Creazione video analisi squat")
+        
+        while True:
+            ret, frame = cap.read()
+            if not ret or frame_idx >= len(barbell_array):
+                break
+            
+            # Ottieni la posizione corrente del bilanciere
+            x, y = barbell_array[frame_idx].astype(int)
+            
+            # Disegna la linea verticale del midfoot
+            cv2.line(frame, (int(midfoot_x), 0), (int(midfoot_x), height), BLUE, 2)
+            
+            # Disegna la zona sicura
+            cv2.rectangle(frame, 
+                        (int(midfoot_x - safe_zone_width/2), 0), 
+                        (int(midfoot_x + safe_zone_width/2), height), 
+                        GREEN, 2)
+            
+            # Disegna il punto del bilanciere
+            deviation = x - midfoot_x
+            color = GREEN if abs(deviation) < safe_zone_width/2 else RED
+            cv2.circle(frame, (x, y), 10, color, -1)
+            
+            # Mostra la deviazione
+            cv2.putText(frame, f"Deviazione: {deviation:.1f}px", (x+15, y), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, WHITE, 2)
+            
+            # Statistiche nell'angolo in alto a sinistra
+            cv2.putText(frame, f"Frame: {frame_idx+1}/{len(barbell_array)}", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, WHITE, 2)
+            cv2.putText(frame, f"In zona sicura: {squat_analysis['percent_in_safe_zone']:.1f}%", 
+                    (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, WHITE, 2)
+            cv2.putText(frame, f"Valutazione: {squat_analysis['assessment'][:20]}...", 
+                    (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, WHITE, 2)
+            
+            # Scrivi il frame nel video di output
+            out.write(frame)
+            
+            # Aggiorna indice e progress bar
+            frame_idx += 1
+            pbar.update(1)
+        
+        # Rilascia le risorse
+        pbar.close()
+        cap.release()
+        out.release()
+        
+        print(f"Video analisi squat salvato in: {output_path}")
+

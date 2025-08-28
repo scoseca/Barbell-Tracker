@@ -1,12 +1,11 @@
 from ultralytics import YOLO
 
 if __name__ == '__main__':
-    # Carica il tuo modello già addestrato
     model = YOLO('E:/Tesi/Barbel-Tracker/src/detection/barbell_tracker/train_highutil/weights/best.pt')
 
     # Esegui il fine-tuning sul nuovo dataset con i casi "banali"
     results = model.train(
-        data='E:/Tesi/Barbel-Tracker/data/dataset yoloV8 2/data.yaml',  # File YAML con percorso al nuovo dataset
+        data='E:/Tesi/Barbel-Tracker/data/dataset yoloV8 2/data.yaml',
         epochs=50,                              # Meno epoche per il fine-tuning
         imgsz=896,                              # Dimensione delle immagini
         batch=16,                               # Batch size

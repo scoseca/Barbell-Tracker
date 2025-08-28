@@ -1,5 +1,9 @@
 import argparse
+import cv2
 import numpy as np
+from src.analysis.squat_analyzer import SquatAnalyzer
+from src.detection.foot_detector import FootPositionDetector
+import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from ultralytics import YOLO
@@ -20,7 +24,7 @@ def print_analysis_results(results_dict):
         elif isinstance(value, np.ndarray) and key == "positions":
             print("  [")
             for i, pos in enumerate(value):
-                #if i % 10 == 0:  # Stampa ogni 10 posizioni (puoi regolarlo)
+                #if i % 10 == 0:  # Stampa ogni 10 posizioni
                 print(f"    Punto {i}: ({pos[0]:.2f}, {pos[1]:.2f})")
             #print(f"    ... e altri {len(value)-4} punti")
             print("  ]")
@@ -33,6 +37,19 @@ def print_analysis_results(results_dict):
             print(f"  Lista di lunghezza {len(value)}")
         else:
             print(f"  {value}")
+    print("-------------------------------------\n")
+
+def print_squat_analysis(analysis):
+    """
+    Formatta e stampa i risultati dell'analisi dello squat.
+    """
+    print("\n----- ANALISI DELLO SQUAT -----")
+    print(f"Deviazione media dal midfoot: {analysis['mean_deviation_px']:.2f} pixel")
+    print(f"Massima deviazione anteriore: {analysis['max_forward_deviation_px']:.2f} pixel")
+    print(f"Massima deviazione posteriore: {analysis['max_backward_deviation_px']:.2f} pixel")
+    print(f"Deviazione standard: {analysis['std_deviation_px']:.2f} pixel")
+    print(f"Tempo in zona sicura: {analysis['percent_in_safe_zone']:.2f}%")
+    print(f"Valutazione: {analysis['assessment']}")
     print("-------------------------------------\n")
 
 
@@ -83,10 +100,7 @@ if __name__ == "__main__":
             analyzer = TrajectoryAnalyzer(fps=fps)
             
             # Da [(x, y, timestamp), ...] a [(x, y), ...]
-            # La TrajectoryAnalyzer probabilmente si aspetta solo coordinate x,y senza timestamp
             trajectory_xy = [(point[0], point[1]) for point in trajectory]
-            
-            # Ora passa solo le coordinate x,y all'analyzer
             smooth_trajectory = analyzer.smooth_trajectory(trajectory_xy)
             if trajectory_xy is not None:
                 analysis_results = analyzer.analyze_trajectory(trajectory_xy)
@@ -95,21 +109,57 @@ if __name__ == "__main__":
         print("No trajectories were detected")
 
     visualizer = Visualizer()
-    # visualizer.plot_trajectory_2d(smooth_trajectory, save_path="E:/Tesi/Barbel-Tracker/data/output")
-    # visualizer.plot_metrics(analysis_results)
-    # try:
-    #     print("Creazione dell'animazione...")
-    #     trajectory_array = np.array(smooth_trajectory)
-    #     visualizer.create_animation(
-    #         trajectory_array,
-    #         analysis_results,
-    #         title="Analisi della Traiettoria del Bilanciere",
-    #         save_path="barbell_trajectory_animation.gif",
-    #         fps=10
-    #     )
-    #     print("Animazione creata con successo!")
-    # except Exception as e:
-    #     print(f"Errore durante la creazione dell'animazione: {str(e)}")
+    # Inizializza il rilevatore del piede e l'analizzatore dello squat
+    foot_detector = FootPositionDetector()
+    squat_analyzer = SquatAnalyzer()
+    # Analizza l'intero video per trovare le posizioni stabili dei piedi
+    print("Analisi delle posizioni dei piedi in tutto il video...")
+    try:
+        foot_position = foot_detector.extract_foot_positions_from_video(
+            args.input, 
+            pose_landmarker, 
+            n_clusters=3,
+            visualize=True
+        )
+        
+        print(f"Posizione del midfoot rilevata: {foot_position}")
+        
+        if foot_position and smooth_trajectory is not None:
+            # Analizza lo squat
+            squat_analysis = squat_analyzer.analyze_squat(smooth_trajectory, foot_position)
+            print_squat_analysis(squat_analysis)
+            
+            # Visualizza l'analisi dello squat
+            output_path = "E:/Tesi/Barbel-Tracker/data/output/squat_analysis.mp4"
+            print(f"Creazione del video di analisi dello squat in {output_path}...")
+            visualizer.visualize_squat_analysis( 
+                args.input, 
+                smooth_trajectory, 
+                foot_position, 
+                squat_analysis, 
+                output_path
+            )
+        else:
+            print("Non è stato possibile rilevare la posizione del piede o analizzare la traiettoria")
+    except Exception as e:
+        print(f"Errore durante l'analisi dei piedi: {str(e)}")
+        print("Continuazione con il resto dell'analisi...")
+
+    visualizer.plot_trajectory_2d(smooth_trajectory, save_path="E:/Tesi/Barbel-Tracker/data/output")
+    visualizer.plot_metrics(analysis_results)
+    try:
+        print("Creazione dell'animazione...")
+        trajectory_array = np.array(smooth_trajectory)
+        visualizer.create_animation(
+            trajectory_array,
+            analysis_results,
+            title="Analisi della Traiettoria del Bilanciere",
+            save_path="barbell_trajectory_animation.gif",
+            fps=10
+        )
+        print("Animazione creata con successo!")
+    except Exception as e:
+        print(f"Errore durante la creazione dell'animazione: {str(e)}")
 
     visualizer.plot_trajectory_on_video(smooth_trajectory, 
                                     video_path=args.input,
