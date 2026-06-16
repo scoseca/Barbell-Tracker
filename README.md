@@ -17,6 +17,11 @@ The project combines a YOLO detector, DeepSORT tracking, MediaPipe pose landmark
 
 ```text
 barbell-tracker/
++-- assets/
+|   +-- demo.gif
+|   +-- trajectory-example.png
+|   +-- squat-analysis-frame.png
+|   +-- pipeline-overview.png
 +-- configs/
 |   +-- pipeline.example.yaml
 +-- src/
@@ -39,6 +44,21 @@ barbell-tracker/
 ```
 
 Local-only folders such as `models/`, `outputs/`, `runs/`, large datasets, and raw videos are ignored by git.
+
+## Visual Examples
+
+The repository keeps a few lightweight visual examples under `assets/` so the README can show the expected output without committing full videos, datasets, model weights, or training runs.
+
+![Pipeline overview](assets/pipeline-overview.png)
+
+- `assets/demo.gif`: short trajectory animation ([open demo](assets/demo.gif)).
+- `assets/trajectory-example.png`: static barbell trajectory plot.
+- `assets/squat-analysis-frame.png`: annotated frame from the squat safe-zone video.
+- `assets/pipeline-overview.png`: high-level pipeline diagram.
+
+| Trajectory plot | Squat analysis frame |
+| --- | --- |
+| ![Trajectory example](assets/trajectory-example.png) | ![Squat analysis frame](assets/squat-analysis-frame.png) |
 
 ## Installation
 
@@ -139,6 +159,30 @@ outputs/demo/
 ```
 
 Metric plots are also saved in the configured metrics directory with timestamped names.
+
+## Metrics
+
+The pipeline extracts:
+
+- horizontal displacement from the estimated midfoot position;
+- vertical barbell displacement;
+- velocity and acceleration curves;
+- total path length;
+- percentage of frames inside the safe zone;
+- trajectory visualization over the original video.
+
+Example summary:
+
+```text
+valid trajectory points: 142
+selected track ID: 3
+estimated FPS: 30
+average horizontal deviation: 24.6 px
+max horizontal deviation: 71.3 px
+time inside safe zone: 82.4%
+```
+
+Pixel-based distances depend on the input video resolution and camera framing, so compare them across videos only when the camera setup is consistent.
 
 ## Tests
 
