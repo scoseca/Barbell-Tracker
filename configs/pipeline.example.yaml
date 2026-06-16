@@ -1,0 +1,61 @@
+# Example runtime configuration for the barbell tracking pipeline.
+# Copy this file to configs/pipeline.yaml and adjust paths for your machine.
+
+project:
+  name: barbell-tracker
+
+paths:
+  input_video: sample_data/short-demo.mp4
+  output_dir: outputs/demo
+
+models:
+  yolo_model_path: models/yolo/barbell/best.pt
+  pose_landmarker_path: models/mediapipe/pose_landmarker_heavy.task
+
+runtime:
+  device: cuda
+  confidence: 0.5
+  fallback_to_cpu: true
+
+video:
+  # null means: read FPS from the input video metadata.
+  fps: null
+
+tracking:
+  tracker: deepsort
+  max_age: 30
+  nn_budget: 100
+  embedder: mobilenet
+
+pose:
+  output_segmentation_masks: false
+  min_pose_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  min_pose_presence_confidence: 0.5
+  num_poses: 1
+
+foot_detection:
+  n_clusters: 3
+  visualize_clusters: true
+  clusters_plot_path: outputs/demo/foot_position_clusters.png
+
+analysis:
+  smoothing:
+    window_size: 15
+    poly_order: 3
+  squat:
+    safe_zone_px: 50
+
+outputs:
+  trajectory_plot_path: outputs/demo/barbell_position.png
+  metrics_plot_dir: outputs/demo
+  animation_path: outputs/demo/barbell_trajectory_animation.gif
+  trajectory_video_path: outputs/demo/trajectory_video.mp4
+  squat_analysis_video_path: outputs/demo/squat_analysis.mp4
+  csv_dir: outputs/demo/csv
+
+visualization:
+  animation_fps: 10
+  draw_path: true
+  show_velocity: true
+  path_history: null

@@ -6,29 +6,54 @@ __pycache__/
 # C extensions
 *.so
 
-# Ignore datasets and model files
-data/dataset yoloV8/
-data/dataset yoloV8 2/
+# Local configuration
+configs/*.yaml
+configs/*.yml
+!configs/*.example.yaml
+!configs/*.example.yml
 
-
-#Ignore image files
-data/extracted_frames/
-
-# Ignore YOLOv8 prediction results
-src/detection/runs
-
-
-
-# Ignore video files
-data/raw_videos/
-
-# Ignore output files
+# Project datasets, models, and generated artifacts
+models/
 outputs/
 results/
-*.log
+runs/
+wandb/
+mlruns/
+src/**/runs/
+src/detection/barbell_tracker/
+data/output/
+data/output.*
+data/raw_videos/
+data/extracted_frames/
+data/dataset*/
+data/models/
+data/set*/
 
-# Ignore model weights
+# Generated root-level artifacts kept out of future commits
+barbell_trajectory_animation.gif
+foot_position_clusters.png
+
+# Videos and model weights
+*.mp4
+*.avi
+*.mov
+*.mkv
 *.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.task
+*.weights
+*.pkl
+*.joblib
+
+# Keep a tiny demo clip trackable if added intentionally
+!sample_data/
+!sample_data/short-demo.mp4
+
+# Logs
+*.log
 
 # Ignore temporary files
 *.tmp
